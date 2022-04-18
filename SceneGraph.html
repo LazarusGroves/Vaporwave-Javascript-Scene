@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Scene Graph 2D</title>
+
+<!My code is in here>
+<script>
+
+   let canvas;   // The canvas that is used as the drawing surface
+   let graphics; // The 2D graphics context for drawing on the canvas.
+
+   const X_LEFT = 0;    // The xy limits for the coordinate system.
+   const X_RIGHT = 100;
+   const Y_BOTTOM = 0;
+   const Y_TOP = 100;
+
+   const BACKGROUND = "white";  // The display is filled with this color before the scene is drawn.
+
+   let pixelSize;  // The size of one pixel, in the transformed coordinates.
+
+   let frameNumber = 0;  // Current frame number. goes up by one in each frame.
+
+   let world;  // A SceneGraphNode representing the entire scene.
+    
+    //TODO: Define global variables to represent animated objects in the scene.
+
+    //Different Global objects that need animation
+    let carRow,carRow2,carRowFull, middleRow, middleRow2, middleRowFull, frontRow, frontRow2, frontRowFull, lastRow, lastRow2, lastRowFull;
+
+    /**
+     *  Builds the data structure that represents the entire picture.
+     */
+    function createWorld() {
+       //Back Row of buildings
+       lastRow = new TransformedObject(createStaticLayer());
+       lastRow2 = new TransformedObject(createStaticLayer());
+       lastRowFull = new CompoundObject();
+       lastRowFull.add(lastRow2.setTranslation(-100,0));
+       lastRowFull.add(lastRow);
+       //Middle Row of buildings
+       middleRow = new TransformedObject(createMiddleLayer());
+       middleRow2 = new TransformedObject(createMiddleLayer());
+       middleRowFull = new CompoundObject();
+       middleRowFull.add(middleRow2);
+       middleRowFull.add(middleRow);
+       //Front Row of buildings
+       frontRow = new TransformedObject(createFrontLayer());
+       frontRow2 = new TransformedObject(createFrontLayer());
+       frontRowFull = new CompoundObject();
+       frontRowFull.add(frontRow2);
+       frontRowFull.add(frontRow);
+       //Car highway
+       carRow = new TransformedObject(createRoadLayer());
+       carRow2 = new TransformedObject(createRoadLayer());
+       carRowFull = new CompoundObject();
+       carRowFull.add(carRow2);
+       carRowFull.add(carRow);
+       //World init
+       world = new CompoundObject();  // Root node for the scene graph.
+
+       //backDrop gradient
+       backDrop = new TransformedObject(backDrop);
+       world.add(backDrop.setScale(100,100));
+
+       //sun animated
+       sun = new TransformedObject(sun);
+       world.add(sun.setTranslation(50,60).setScale(30,30));
+
+                  //Append all layers + Car
+
+       //Furthest layer of buildings and smog (smog is a custom node)
+       world.add(new TransformedObject(lastRowFull));
+       world.add(new TransformedObject(smog).setScale(100,100));
+       //Middle layer of buildings and respective smog
+       world.add(new TransformedObject(middleRowFull));
+       world.add(new TransformedObject(smog).setScale(100,100));
+       //Front row of buildings with respective smog
+       world.add(new TransformedObject(frontRowFull));
+       world.add(new TransformedObject(smog).setScale(100,100));
+       world.add(new TransformedObject(createCar()).setScale(1.5,1).setTranslation(-40,0));
+       world.add(new TransformedObject(carRowFull));
+       world.add(new TransformedObject(smog).setScale(100,100));
+    }
+    //Different Variations of rows of windows
+    function createWindowRow1() {
+       windowRow1 = new CompoundObject();
+
+       windowRow1.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.2, 0.05).setTranslation(0.25,0));
+       windowRow1.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05, 0.05).setTranslation(0.15, 0));
+       windowRow1.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05, 0.05).setTranslation(0.5, 0));
+       windowRow1.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05, 0.05).setTranslation(0.6, 0));
+
+       return windowRow1;
+    }
+    function createWindowRow2() {
+       windowRow2 = new CompoundObject();
+
+       windowRow2.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.3,0.05).setTranslation(0.5,0));
+       windowRow2.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.2,0.05).setTranslation(0.2,0));
+
+       return windowRow2;
+    }
+    function createWindowRow3() {
+       windowRow3 = new CompoundObject();
+
+       windowRow3.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.5,0.05).setTranslation(0.1,0));
+       windowRow3.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.3,0.05).setTranslation(0.65,0));
+
+       return windowRow3;
+    }
+    function createWindowRow4() {
+       windowRow4 = new CompoundObject();
+
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.75,0));
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.85,0));
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.1,0));
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.25,0));
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.65,0));
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(1.1,0));
+       windowRow4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(1.25,0));
+
+       return windowRow4;
+    }
+    function createWindowRow5() {
+       windowRow5 = new CompoundObject();
+
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.25,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.35,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.45,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.55,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.65,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.75,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.85,0));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.25,-0.075));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.35,-0.075));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.45,-0.075));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.55,-0.075));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.65,-0.075));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.75,-0.075));
+       windowRow5.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,0.05).setTranslation(0.85,-0.075));
+
+       return windowRow5;
+    }
+    function createWindowRow6() {
+       windowRow6 = new CompoundObject();
+
+       windowRow6.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.25, 0.05).setTranslation(0.25,0));
+       windowRow6.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.25, 0.05).setTranslation(0.55,0));
+       windowRow6.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.15, 0.05).setTranslation(0.05,0));
+       windowRow6.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.25, 0.05).setTranslation(0.85,0));
+       windowRow6.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05, 0.05).setTranslation(1.15,0));
+       windowRow6.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05, 0.05).setTranslation(1.25,0));
+
+       return windowRow6;
+    }
+    //Different Variations of Buildings
+    function createBuildingOne() {
+       const build1 = new CompoundObject();
+
+       //Black Building Parts
+       build1.add(new TransformedObject(filledRect).setFillColor("black").setScale(1,10));
+       build1.add(new TransformedObject(filledRect).setFillColor("black").setScale(1.5,9));
+       build1.add(new TransformedObject(filledRect).setFillColor("black").setScale(0.05,10.25).setTranslation(1.15,0));
+       build1.add(new TransformedObject(filledRect).setFillColor("black").setScale(0.05,9.75).setTranslation(1.25,0));
+
+       //White Windows
+       build1.add(new TransformedObject(createWindowRow1()).setTranslation(0,9.5));
+       build1.add(new TransformedObject(createWindowRow2()).setTranslation(0,9));
+       build1.add(new TransformedObject(createWindowRow3()).setTranslation(0,8.5));
+       build1.add(new TransformedObject(createWindowRow4()).setTranslation(0,8));
+       build1.add(new TransformedObject(createWindowRow1()).setTranslation(0,7.5));
+       build1.add(new TransformedObject(createWindowRow5()).setTranslation(0,7));
+       build1.add(new TransformedObject(createWindowRow6()).setTranslation(0,6.5));
+       build1.add(new TransformedObject(createWindowRow6()).setTranslation(1.35,6).setScale(-1,1));
+       build1.add(new TransformedObject(createWindowRow1()).setTranslation(0.35,5.5));
+       build1.add(new TransformedObject(createWindowRow1()).setTranslation(0,5));
+       build1.add(new TransformedObject(createWindowRow2()).setTranslation(0,4.5));
+       build1.add(new TransformedObject(createWindowRow5()).setTranslation(0.3,4));
+
+       return build1;
+    }
+    function createBuildingTwo() {
+       compoundBuildingOne = new CompoundObject();
+
+       //A mirror addition of building 1
+       compoundBuildingOne.add(new TransformedObject(createBuildingOne()));
+       compoundBuildingOne.add(new TransformedObject(createBuildingOne()).setScale(-1,1).setTranslation(2.98,-0.75));
+
+       return compoundBuildingOne;
+    }
+    function createBuildingThree() {
+       const build2 = new CompoundObject();
+
+       //Black Building Parts
+       build2.add(new TransformedObject(filledRect).setFillColor("black").setScale(2,10));
+       build2.add(new TransformedObject(filledRect).setFillColor("black").setScale(1.5,11.5).setTranslation(0.25,0));
+       build2.add(new TransformedObject(filledTriangle).setFillColor("black").setScale(2,2).setTranslation(0.25,11.5));
+       build2.add(new TransformedObject(filledRect).setFillColor("black").setScale(0.05,2).setTranslation(1.3,10));
+       build2.add(new TransformedObject(filledRect).setFillColor("black").setScale(0.05,3).setTranslation(1.4,10));
+
+       //Windows
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.5,11.5).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.7,11.2).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.25,11));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.8,11.25));
+       build2.add(new TransformedObject(createWindowRow3()).setTranslation(0.25,10.75));
+       build2.add(new TransformedObject(createWindowRow6()).setTranslation(0.3,10.25));
+       build2.add(new TransformedObject(createWindowRow2()).setTranslation(0.1,9.75));
+       build2.add(new TransformedObject(createWindowRow6()).setTranslation(0.5,9.75));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.7,9.25));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.15,9).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.15,8.2).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.15,7.4).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.15,6.6).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(1.825,9-3.4).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(1.825,8.2-3.4).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(1.825,7.4-3.4).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(1.825,6.6-3.4).setRotation(90));
+       build2.add(new TransformedObject(createWindowRow6()).setTranslation(0.3,8.75));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.3,8.25));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.3,7.75));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.75,7.75));
+       build2.add(new TransformedObject(createWindowRow4()).setTranslation(0.35,7.25));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.8,6.675));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.05,6.675));
+       build2.add(new TransformedObject(filledRect).setFillColor("white").setTranslation(0.1,6.6).setScale(0.125,0.125));
+       build2.add(new TransformedObject(filledRect).setFillColor("white").setTranslation(1.775,6.6).setScale(0.125,0.125));
+       build2.add(new TransformedObject(createWindowRow4()).setTranslation(0.05,6));
+       build2.add(new TransformedObject(createWindowRow2()).setTranslation(0.05,5.5));
+       build2.add(new TransformedObject(createWindowRow4()).setTranslation(0.05,5.5));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.85,5));
+       build2.add(new TransformedObject(createWindowRow1()).setTranslation(0.8,5).setScale(-1,1));
+       build2.add(new TransformedObject(createWindowRow3()).setTranslation(0.2,4.5));
+       build2.add(new TransformedObject(createWindowRow2()).setTranslation(0.6,4));
+       build2.add(new TransformedObject(createWindowRow6()).setTranslation(0.2,3.5));
+       build2.add(new TransformedObject(createWindowRow5()).setTranslation(0.2,3));
+       build2.add(new TransformedObject(createWindowRow6()).setTranslation(0.2,2.5));
+       build2.add(new TransformedObject(createWindowRow2()).setTranslation(0.2,2));
+
+       return build2;
+    }
+    function createBuildingFour() {
+       const build4 = new CompoundObject();
+
+       //Black Building Parts
+       build4.add(new TransformedObject(filledRect).setScale(0.5,10));
+       build4.add(new TransformedObject(filledRect).setScale(0.25,11).setTranslation(0.125,0));
+       build4.add(new TransformedObject(filledRect).setScale(0.125,12).setTranslation(0.1875,0));
+       build4.add(new TransformedObject(filledRect).setScale(0.0625,13).setTranslation(0.225,0));
+       build4.add(new TransformedObject(filledRect).setScale(0.025,14).setTranslation(0.2425,0));
+
+       //White Windows
+       //build4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.03,3.5).setTranslation(0.2375,6.5));
+       build4.add(new TransformedObject(filledRect).setFillColor("white").setScale(0.05,6.45).setTranslation(0.225,4.5));
+       //build4.add(new TransformedObject(createWindowRow5()).setRotation(90).setScale(8,1).setTranslation(0.37,2.7));
+       //build4.add(new TransformedObject(createWindowRow5()).setRotation(90).setScale(8,3).setTranslation(0.2,2.7));
+       build4.add(new TransformedObject(createWindowRow3()).setRotation(90).setTranslation(0.1,9));
+       build4.add(new TransformedObject(createWindowRow4()).setRotation(90).setTranslation(0.2,8.3));
+       build4.add(new TransformedObject(createWindowRow2()).setRotation(90).setTranslation(0.1,7));
+       build4.add(new TransformedObject(createWindowRow3()).setRotation(90).setTranslation(0.2,6));
+       build4.add(new TransformedObject(createWindowRow1()).setRotation(90).setTranslation(0.1,5.3));
+       build4.add(new TransformedObject(createWindowRow2()).setRotation(90).setTranslation(0.2,4.25));
+       build4.add(new TransformedObject(createWindowRow4()).setRotation(90).setTranslation(0.375,4.25));
+       build4.add(new TransformedObject(createWindowRow3()).setRotation(90).setTranslation(0.375,6.6));
+       build4.add(new TransformedObject(createWindowRow6()).setRotation(90).setTranslation(0.45,7.6));
+       build4.add(new TransformedObject(createWindowRow1()).setRotation(90).setTranslation(0.45,9.2));
+
+       return build4;
+    }
+    function createBuildingFive() {
+       const build5 = new CompoundObject();
+
+       //Black Building Objects
+       build5.add(new TransformedObject(filledRect).setScale(3,10));
+       build5.add(new TransformedObject(filledCircle).setScale(2.5,1.5).setTranslation(1.5,9.8));
+       build5.add(new TransformedObject(filledRect).setScale(0.05,1.5).setTranslation(1.45,10.5));
+
+       //Windows
+       build5.add(new TransformedObject(createWindowRow6()).setTranslation(0.2,9.5));
+       build5.add(new TransformedObject(createWindowRow1()).setTranslation(1.4,9.5));
+       build5.add(new TransformedObject(createWindowRow3()).setTranslation(0.2,9));
+       build5.add(new TransformedObject(createWindowRow3()).setTranslation(1.7,9));
+       build5.add(new TransformedObject(createWindowRow5()).setRotation(90).setTranslation(1.45,5));
+       build5.add(new TransformedObject(createWindowRow5()).setRotation(90).setTranslation(1.45,6));
+       build5.add(new TransformedObject(createWindowRow5()).setRotation(90).setTranslation(1.45,7));
+       build5.add(new TransformedObject(createWindowRow5()).setRotation(90).setTranslation(1.45,8));
+       build5.add(new TransformedObject(createWindowRow5()).setRotation(90).setTranslation(1.45,4));
+       build5.add(new TransformedObject(createWindowRow2()).setTranslation(0.2,8.5));
+       build5.add(new TransformedObject(createWindowRow1()).setTranslation(1.8,8.5));
+       build5.add(new TransformedObject(createWindowRow4()).setTranslation(1,8));
+       build5.add(new TransformedObject(createWindowRow2()).setTranslation(1.8,7.5));
+       build5.add(new TransformedObject(createWindowRow6()).setTranslation(0.1,7.05).setScale(2,1));
+       build5.add(new TransformedObject(createWindowRow1()).setTranslation(1.8,6.5));
+       build5.add(new TransformedObject(createWindowRow3()).setTranslation(0.2,6.5));
+       build5.add(new TransformedObject(createWindowRow4()).setTranslation(0.45,6));
+       build5.add(new TransformedObject(createWindowRow6()).setTranslation(2.825,5.05).setScale(-2,1));
+       build5.add(new TransformedObject(createWindowRow4()).setTranslation(1.45,6));
+       build5.add(new TransformedObject(createWindowRow1()).setTranslation(0.2,5.5));
+       build5.add(new TransformedObject(createWindowRow1()).setTranslation(1.6,4.5));
+       build5.add(new TransformedObject(createWindowRow2()).setTranslation(0.2,4.5));
+
+       return build5;
+    }
+    //Separate function for each layer and car
+    function createStaticLayer() {
+       let staticLayer = new CompoundObject();
+
+       staticLayer.add(new TransformedObject(filledRect).setScale(110,30).setTranslation(-10,0));
+       staticLayer.add(new TransformedObject(createBuildingTwo()).setScale(7,7));
+       staticLayer.add(new TransformedObject(createBuildingOne()).setScale(7,7).setTranslation(68,4));
+       staticLayer.add(new TransformedObject(createBuildingThree()).setScale(7,7).setTranslation(28,0));
+       staticLayer.add(new TransformedObject(createBuildingThree()).setScale(-5,6).setTranslation(98,17));
+       staticLayer.add(new TransformedObject(createBuildingFour()).setScale(7,7).setTranslation(82,0));
+       staticLayer.add(new TransformedObject(createBuildingFive()).setScale(7,7).setTranslation(44,-5));
+       return staticLayer;
+    }
+    function createMiddleLayer() {
+       const l2 = new CompoundObject();
+
+       l2.add(new TransformedObject(filledRect).setFillColor("black").setScale(110,21).setTranslation(-10,0));
+       l2.add(new TransformedObject(createBuildingThree()).setScale(8,8).setTranslation(0,-10));
+       l2.add(new TransformedObject(createBuildingTwo()).setScale(8,8).setTranslation(20,-15));
+       l2.add(new TransformedObject(createBuildingFour()).setScale(8,8).setTranslation(47,-20));
+       l2.add(new TransformedObject(createBuildingOne()).setScale(-8,8).setTranslation(65,-15));
+       l2.add(new TransformedObject(createBuildingFive()).setScale(8,8).setTranslation(67.5,-25));
+       l2.add(new TransformedObject(createBuildingFour()).setScale(8,8).setTranslation(95,-25));
+
+       return l2;
+    }
+    function createFrontLayer() {
+       const l3 = new CompoundObject();
+
+       l3.add(new TransformedObject(filledRect).setFillColor("black").setScale(110,8).setTranslation(-10,0));
+       l3.add(new TransformedObject(createBuildingFive()).setScale(10,10).setTranslation(15,-65));
+       l3.add(new TransformedObject(createBuildingTwo()).setScale(10,10).setTranslation(47,-50));
+       l3.add(new TransformedObject(createBuildingFour()).setScale(10,10).setTranslation(5,-50));
+       l3.add(new TransformedObject(createBuildingThree()).setScale(10,10).setTranslation(80,-80));
+
+       return l3;
+    }
+    function createRoadLayer() {
+       const l4 = new CompoundObject();
+
+       l4.add(new TransformedObject(filledRect).setScale(110,8).setTranslation(-10,20));
+       l4.add(new TransformedObject(filledRect).setScale(10,21).setTranslation(0,0));
+       l4.add(new TransformedObject(filledRect).setScale(10,21).setTranslation(33,0));
+       l4.add(new TransformedObject(filledRect).setScale(10,21).setTranslation(66,0));
+       l4.add(new TransformedObject(filledRect).setFillColor("white").setScale(110,2).setTranslation(-10,23));
+       l4.add(new TransformedObject(filledRect).setScale(5,21).setTranslation(2.5,6));
+       l4.add(new TransformedObject(filledRect).setScale(5,21).setTranslation(35.5,6));
+       l4.add(new TransformedObject(filledRect).setScale(5,21).setTranslation(68.5,6));
+       l4.add(new TransformedObject(filledRect).setScale(2,22).setTranslation(4,0).setFillColor("white"));
+       l4.add(new TransformedObject(filledRect).setScale(2,22).setTranslation(37,0).setFillColor("white"));
+       l4.add(new TransformedObject(filledRect).setScale(2,22).setTranslation(70,0).setFillColor("white"));
+       l4.add(new TransformedObject(filledRect).setScale(2,2).setTranslation(4,23).setFillColor("white"));
+       l4.add(new TransformedObject(filledRect).setScale(2,2).setTranslation(37,23).setFillColor("white"));
+       l4.add(new TransformedObject(filledRect).setScale(2,2).setTranslation(70,23).setFillColor("white"));
+       for(let i = 0; i<10; i++) {
+          l4.add(new TransformedObject(filledRect).setScale(2,5).setTranslation(i*10,28));
+       }
+       l4.add(new TransformedObject(filledRect).setScale(110,1).setTranslation(0,33));
+
+       return l4;
+    }
+    function createCar() {
+       const car = new CompoundObject();
+
+       car.add(new TransformedObject(filledCircle).setTranslation(45,30).setScale(5,5));
+       car.add(new TransformedObject(filledCircle).setTranslation(55,30).setScale(5,5));
+       car.add(new TransformedObject(filledCircle).setTranslation(45,30).setScale(1,1).setFillColor("white"));
+       car.add(new TransformedObject(filledCircle).setTranslation(55,30).setScale(1,1).setFillColor("white"));
+       car.add(new TransformedObject(filledRect).setTranslation(40,30).setScale(20,7));
+       car.add(new TransformedObject(filledTriangle).setTranslation(45,37).setScale(-10,5));
+       car.add(new TransformedObject(filledTriangle).setTranslation(52.5,37).setScale(13,5));
+       car.add(new TransformedObject(filledRect).setTranslation(45,37).setScale(7.5,5));
+       car.add(new TransformedObject(filledTriangle).setTranslation(45,37).setScale(-8,4).setFillColor("white"));
+       car.add(new TransformedObject(filledTriangle).setTranslation(52.5,37).setScale(10,4).setFillColor("white"));
+       car.add(new TransformedObject(filledRect).setTranslation(46,37).setScale(5.5,4).setFillColor("white"));
+       car.add(new TransformedObject(filledRect).setTranslation(59,35).setScale(0.75,0.5).setFillColor("white"));
+
+       return car;
+    }
+    /**
+     * This method is called just before each frame is drawn.  It updates the modeling
+     * transformations of the objects in the scene that are animated.
+     */
+    function updateFrame() {
+        frameNumber++;
+        //Allows different object to loop playback at different speeds according to global frame rate
+        mod50k = -(frameNumber%25000)/25000;
+        mod25k = -(frameNumber%10000)/10000;
+        mod10k = -(frameNumber%5000)/5000;
+        mod5k = -(frameNumber%100)/100;
+        //TODO: Update state in preparation for drawing the next frame.
+        lastRow.setTranslation(mod50k*100,0);
+        lastRow2.setTranslation(mod50k*100+100,0);
+
+        middleRow.setTranslation(mod25k*100,0);
+        middleRow2.setTranslation(mod25k*100+100,0);
+
+        frontRow.setTranslation(mod10k*100,0);
+        frontRow2.setTranslation(mod10k*100+100,0);
+
+        carRow.setTranslation(mod5k*100,0);
+        carRow2.setTranslation(mod5k*100+100,0);
+    }
+ 
+
+    //------------------- A Simple Scene Object-Oriented Scene Graph API ----------------
+    
+    /**
+     * The (abstract) base class for all nodes in the scene graph data structure.
+     */
+    function SceneGraphNode() {
+        this.fillColor = null;   // If non-null, the default fillStyle for this node.
+        this.strokeColor = null; // If non-null, the default strokeStyle for this node.
+    }
+    SceneGraphNode.prototype.doDraw = function(g) {
+            // This method is meant to be abstract and must be OVERRIDDEN in an actual
+            // object. It is not meant to be called; it is called by draw().
+        throw "doDraw not implemented in SceneGraphNode"
+    }
+    SceneGraphNode.prototype.draw = function(g) {
+           // This method should be CALLED to draw the object It should NOT
+           // ordinarily be overridden in subclasses.
+        graphics.save();
+        if (this.fillColor) {
+            g.fillStyle = this.fillColor;
+        }
+        if (this.strokeColor) {
+            g.strokeStyle = this.strokeColor;
+        }
+        this.doDraw(g);
+        graphics.restore();
+    }
+    SceneGraphNode.prototype.setFillColor = function(color) {
+            // Sets fillColor for this node to color.
+            // Color should be a legal CSS color string, or null.
+        this.fillColor = color;
+        return this;
+    }
+    SceneGraphNode.prototype.setStrokeColor = function(color) {
+            // Sets strokeColor for this node to color.
+            // Color should be a legal CSS color string, or null.
+        this.strokeColor = color;
+        return this;
+    }
+    SceneGraphNode.prototype.setColor = function(color) {
+            // Sets both the fillColor and strokeColor to color.
+            // Color should be a legal CSS color string, or null.
+        this.fillColor = color;
+        this.strokeColor = color;
+        return this;
+    }
+    
+    /**
+     *  Defines a subclass, CompoundObject, of SceneGraphNode to represent
+     *  an object that is made up of sub-objects.  Initially, there are no
+     *  sub-objects.  Objects are added with the add() method.
+     */
+    function CompoundObject() {
+        SceneGraphNode.call(this);  // do superclass initialization
+        this.subobjects = [];  // the list of sub-objects of this object
+    }
+    CompoundObject.prototype = new SceneGraphNode(); // (makes it a subclass!)
+    CompoundObject.prototype.add = function(node) {
+        this.subobjects.push(node);
+        return this;
+    }
+    CompoundObject.prototype.doDraw = function(g) {
+            // Just call the sub-objects' draw() methods.
+        for (var i = 0; i < this.subobjects.length; i++)
+            this.subobjects[i].draw(g);
+    }
+    
+    /**
+     *  Define a subclass, TransformedObject, of SceneGraphNode that
+     *  represents an object along with a modeling transformation to
+     *  be applied to that object.  The object must be specified in
+     *  the constructor.  The transformation is specified by calling
+     *  the setScale(), setRotate() and setTranslate() methods. Note that
+     *  each of these methods returns a reference to the TransformedObject
+     *  as its return value, to allow for chaining of method calls.
+     *  The modeling transformations are always applied to the object
+     *  in the order scale, then rotate, then translate.
+     */
+    function TransformedObject(object) {
+        SceneGraphNode.call(this);  // do superclass initialization
+        this.object = object;
+        this.rotationInDegrees = 0;
+        this.scaleX = 1;
+        this.scaleY = 1;
+        this.translateX = 0;
+        this.translateY = 0;
+    }
+    TransformedObject.prototype = new SceneGraphNode();  // (makes it a subclass!)
+    TransformedObject.prototype.setRotation = function(angle) {
+           // Set the angle of rotation, measured in DEGREES.  The rotation
+           // is always about the origin.
+        this.rotationInDegrees = angle;
+        return this;
+    }
+    TransformedObject.prototype.setScale = function(sx, sy) {
+           // Sets scaling factors.
+        this.scaleX = sx;
+        this.scaleY = sy;
+        return this;
+    }
+    TransformedObject.prototype.setTranslation = function(dx,dy) {
+           // Set translation mounts.
+        this.translateX = dx;
+        this.translateY = dy;
+        return this;
+    }
+    TransformedObject.prototype.doDraw = function(g) {
+            // Draws the object, with its modeling transformation.
+        g.save();
+        if (this.translateX != 0 || this.translateY != 0) {
+            g.translate(this.translateX, this.translateY);
+        }
+        if (this.rotationInDegrees != 0) {
+            g.rotate(this.rotationInDegrees/180*Math.PI);
+        }
+        if (this.scaleX != 1 || this.scaleY != 1) {
+            g.scale(this.scaleX, this.scaleY);
+        }
+        this.object.draw(g);
+        g.restore();
+    }
+    
+           // Create some basic shapes as custom SceneGraphNode objects.
+           
+    var line = new SceneGraphNode();  // Line from (-0.5,0) to (0.5,0)
+    line.doDraw = function(g) {
+        g.beginPath();
+        g.moveTo(-0.5,0);
+        g.lineTo(0.5,0);
+        g.stroke();
+    }
+    
+    var filledRect = new SceneGraphNode();  // Filled square, size = 1, center = (0,0)
+    filledRect.doDraw = function(g) {
+        g.fillRect(0,0,1,1);
+    }
+
+    //Initial Gradient Backdrop
+    var backDrop = new SceneGraphNode();
+    backDrop.doDraw = function(g) {
+       var backDropGrad = graphics.createLinearGradient(0,0,0,1);
+       backDropGrad.addColorStop(0.5,"#FE2AFB");
+       backDropGrad.addColorStop(0.8,"#2000AC");
+       g.fillStyle = backDropGrad;
+       g.fillRect(0,0,1,1);
+    }
+
+    //Animted Sun in the back
+    var sun = new SceneGraphNode();
+    sun.doDraw = function(g) {
+       var sunGrad = graphics.createLinearGradient(0,0,0,1);
+       sunGrad.addColorStop(1,"#FFCA80");
+       sunGrad.addColorStop(0.3,"#FF3279");
+       g.fillStyle = sunGrad;
+
+       //Sun Cap
+       g.save();
+       g.beginPath();
+       let start = Math.PI/6;
+       let mirror = Math.PI*2/3;
+       g.moveTo(Math.cos(start),Math.sin(start));
+       for(let i = 0; i<100; i++) {
+          g.lineTo(Math.cos(start+(i/99)*mirror),Math.sin(start+(i/99)*mirror));
+       }
+       g.fill();
+       g.restore();
+
+       //Sun Slabs
+       for(let i = 0; i<=10; i++) {
+          let gap = Math.PI/17;
+          let mod = (frameNumber%750)/750;
+          let modGap = mod*gap;
+          let interval = i*gap + modGap;
+          let size = 0.125;
+          g.save();
+          g.beginPath();
+          g.moveTo(Math.cos(Math.PI*5/6 - size + interval),Math.sin(Math.PI*5/6 - size + interval));
+          for(let k = 0; k<=100; k++) {
+             g.lineTo(Math.cos(Math.PI*5/6 - size + k/100 * size + interval),Math.sin(Math.PI*5/6 - size + k/100 * size + interval));
+          }
+          g.lineTo(-Math.cos(Math.PI*5/6 + interval),Math.sin(Math.PI*5/6 + interval));
+          for(let k = 0; k<=100; k++) {
+             g.lineTo(-Math.cos(Math.PI*5/6 - k/100 * size + interval),Math.sin(Math.PI*5/6 - k/100 * size + interval));
+          }
+          //g.lineTo(0,0);
+          //g.lineTo(100,100);
+          g.fill();
+          g.restore();
+       }
+    }
+
+    //Smog that gets layered to help distinguish different building layers
+    var smog = new SceneGraphNode();
+    smog.doDraw = function(g) {
+       var backDropGrad = graphics.createLinearGradient(0,0,0,1);
+       backDropGrad.addColorStop(0.5,'rgba(254,42,251,0.15)');
+       backDropGrad.addColorStop(0.8,'rgba(32,0,172,0.05)');
+       g.fillStyle = backDropGrad;
+       g.fillRect(0,0,1,1);
+    }
+
+    var rect = new SceneGraphNode(); // Stroked square, size = 1, center = (0,0)
+    rect.doDraw = function(g) {
+        g.strokeRect(-0.5,-0.5,1,1);
+    }
+    
+    var filledCircle = new SceneGraphNode(); // Filled circle, diameter = 1, center = (0,0)
+    filledCircle.doDraw = function(g) {
+        g.beginPath();
+        g.arc(0,0,0.5,0,2*Math.PI);
+        g.fill();
+    }
+    
+    var circle = new SceneGraphNode();// Stroked circle, diameter = 1, center = (0,0)
+    circle.doDraw = function(g) {
+        g.beginPath();
+        g.arc(0,0,0.5,0,2*Math.PI);
+        for (var i = 0; i <12; i++) {
+            g.moveTo(0,0);
+            g.lineTo(0.5*Math.sin(i/6*Math.PI),(0.5*Math.cos(i/6*Math.PI)));
+        }
+        g.closePath();
+        g.stroke();
+    }
+    
+    var filledTriangle = new SceneGraphNode(); // Filled Triangle, width 1, height 1, center of base at (0,0)
+    filledTriangle.doDraw = function(g) {
+        g.beginPath();
+        g.moveTo(0,0);
+        g.lineTo(0.5,0);
+        g.lineTo(0,1);
+        g.closePath();
+        g.fill();
+    }
+
+    var outlineWheel = new SceneGraphNode();
+    outlineWheel.doDraw = function(g) {
+        g.beginPath();
+        g.arc(0,0,0.5,0,2*Math.PI);
+        for (var i = 0; i <12; i++) {
+            g.moveTo(0,0);
+            g.lineTo(0.5*Math.sin(i/6*Math.PI),(0.5*Math.cos(i/6*Math.PI)));
+        }
+        g.closePath();
+        g.stoke();
+    }
+    
+   
+    
+    // ------------------------------- graphics support functions --------------------------
+    
+    /**
+      * Draw one frame of the animation.  Probably doesn't need to be changed,
+      * except maybe to change the setting of preserveAspect in applyLimits().
+      */
+    function draw() {
+        graphics.save();  // to make sure changes don't carry over from one call to the next
+        graphics.fillStyle = BACKGROUND;  // background color
+        graphics.fillRect(0,0,canvas.width,canvas.height);
+        graphics.fillStyle = "black";
+        applyLimits(graphics,X_LEFT,X_RIGHT,Y_TOP,Y_BOTTOM,false);
+        graphics.lineWidth = pixelSize;  // Use 1 pixel as the default line width
+        world.draw(graphics);
+        graphics.restore();
+    }
+    
+    /**
+     * Applies a coordinate transformation to the graphics context, to map
+     * xleft,xright,ytop,ybottom to the edges of the canvas.  This is called
+     * by draw().  This does not need to be changed.
+     */
+    function applyLimits(g, xleft, xright, ytop, ybottom, preserveAspect) {
+       var width = canvas.width;   // The width of this drawing area, in pixels.
+       var height = canvas.height; // The height of this drawing area, in pixels.
+       if (preserveAspect) {
+             // Adjust the limits to match the aspect ratio of the drawing area.
+          var displayAspect = Math.abs(height / width);
+          var requestedAspect = Math.abs(( ybottom-ytop ) / ( xright-xleft ));
+          var excess;
+          if (displayAspect > requestedAspect) {
+             excess = (ybottom-ytop) * (displayAspect/requestedAspect - 1);
+             ybottom += excess/2;
+             ytop -= excess/2;
+          }
+          else if (displayAspect < requestedAspect) {
+             excess = (xright-xleft) * (requestedAspect/displayAspect - 1);
+             xright += excess/2;
+             xleft -= excess/2;
+          }
+       }
+       var pixelWidth = Math.abs(( xright - xleft ) / width);
+       var pixelHeight = Math.abs(( ybottom - ytop ) / height);
+       pixelSize = Math.min(pixelWidth,pixelHeight);
+       g.scale( width / (xright-xleft), height / (ybottom-ytop) );
+       g.translate( -xleft, -ytop );
+    }
+    
+    
+    //------------------ Animation framework ------------------------------
+    
+    var running = false;  // This is set to true when animation is running
+    
+    function frame() {
+        if (running) {
+               // Draw one frame of the animation, and schedule the next frame.
+            updateFrame();
+            draw();
+            requestAnimationFrame(frame);
+        }
+    }
+    
+    function doAnimationCheckbox() { 
+        var shouldRun = document.getElementById("animateCheck").checked;
+        if ( shouldRun != running ) {
+            running = shouldRun;
+            if (running)
+                requestAnimationFrame(frame);
+        }
+    }
+    
+    //----------------------- initialization -------------------------------
+
+    function init() {
+        canvas = document.getElementById("thecanvas");
+        if (!canvas.getContext) {
+            document.getElementById("message").innerHTML = "ERROR: Canvas not supported";
+            return;
+        }
+        graphics = canvas.getContext("2d");
+        document.getElementById("animateCheck").checked = false;
+        document.getElementById("animateCheck").onchange = doAnimationCheckbox;
+        createWorld();
+        draw();
+    }
+
+</script>
+
+</head>
+
+<body onload="init()" style="background-color:#EEEEEE">
+
+<h3>Vaporwave Scene Graph - 2356823</h3>
+
+<noscript>
+   <p><b style="color:red">Error: This page requires JavaScript, but it is not available.</b></p>
+</noscript>
+
+<p id="message"><label><input type="checkbox" id="animateCheck"><b>Please check this box to begin the scene</b></label></p>
+
+<div style="float:left; border: 2px solid black">
+<canvas id="thecanvas" width="800" height="800" style="display:block"></canvas>
+</div>
+
+
+</body>
+</html>
